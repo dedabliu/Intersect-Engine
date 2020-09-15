@@ -1,0 +1,66 @@
+From 0cabc6e6b99b8d87044176d769b5f4d7ea348b25 Mon Sep 17 00:00:00 2001
+From: lunarsourcellc <lunarsourcellc@gmail.com>
+Date: Wed, 29 Apr 2020 21:54:48 -0400
+Subject: [PATCH] EXP Loss On Death
+
+---
+ Intersect (Core)/Config/PlayerOptions.cs |  5 +++++
+ Intersect.Server/Entities/Player.cs      | 19 +++++++++++++++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/Intersect (Core)/Config/PlayerOptions.cs b/Intersect (Core)/Config/PlayerOptions.cs
+index 7e5c5ca6..3c5e4fd7 100644
+--- a/Intersect (Core)/Config/PlayerOptions.cs	
++++ b/Intersect (Core)/Config/PlayerOptions.cs	
+@@ -24,6 +24,11 @@ public class PlayerOptions
+ 
+         public int TradeRange = 6;
+ 
++        // PATCH: EXP Loss On Death
++        public float EXPLossOnDeathPercentage = 0;
++
++        public int EXPLossOnDeath = 0;
++        // PATCH: EXP Loss On Death
+     }
+ 
+ }
+diff --git a/Intersect.Server/Entities/Player.cs b/Intersect.Server/Entities/Player.cs
+index 81a0d2d7..46fea78f 100644
+--- a/Intersect.Server/Entities/Player.cs
++++ b/Intersect.Server/Entities/Player.cs
+@@ -629,6 +629,12 @@ public override void Die(int dropitems = 0, Entity killer = null)
+ 
+             base.Die(dropitems, killer);
+             PacketSender.SendEntityDie(this);
++
++            // PATCH: EXP Loss On Death
++            var expToTake = (GetExperienceToNextLevel(this.Level) * (Options.Player.EXPLossOnDeathPercentage / 100.0)) + Options.Player.EXPLossOnDeath;
++            TakeExperience((long)expToTake);
++            // PATCH: EXP Loss On Death
++
+             Reset();
+             Respawn();
+             PacketSender.SendInventory(this);
+@@ -829,6 +835,19 @@ public void GiveExperience(long amount)
+             }
+         }
+ 
++        // PATCH: EXP Loss On Death
++        public void TakeExperience(long amount)
++        {
++            Exp -= amount;
++            if (Exp < 0)
++            {
++                Exp = 0;
++            }
++
++            PacketSender.SendExperience(this);
++        }
++        // PATCH: EXP Loss On Death
++
+         private bool CheckLevelUp()
+         {
+             var levelCount = 0;
+-- 
+2.17.1.windows.2
+
